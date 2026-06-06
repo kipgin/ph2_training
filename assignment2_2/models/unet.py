@@ -3,10 +3,7 @@ import torch
 import torch.nn as nn
 
 class SinusoidalPositionEmbeddings(nn.Module):
-    """
-    Computes standard sinusoidal timestep embeddings for DDPM/DDIM.
-    It takes timesteps (B,) and projects them to a representation space of size (B, dim).
-    """
+    #time embedding
     def __init__(self, dim):
         super().__init__()
         self.dim = dim
@@ -21,9 +18,6 @@ class SinusoidalPositionEmbeddings(nn.Module):
         return embeddings
 
 class Block(nn.Module):
-    """
-    Standard convolutional sub-block: Convolution -> GroupNormalization -> SiLU
-    """
     def __init__(self, in_ch, out_ch, groups=8):
         super().__init__()
         self.proj = nn.Conv2d(in_ch, out_ch, 3, padding=1)
@@ -37,12 +31,10 @@ class Block(nn.Module):
         return x
 
 class ResnetBlock(nn.Module):
-    """
-    A ResNet block that merges time-step embeddings with the feature activation maps.
-    """
+    #resnet block
     def __init__(self, in_ch, out_ch, time_emb_dim=None, groups=8):
         super().__init__()
-        # Project time-step embeddings to match block channel dimensions
+        #time embedd->block embedd
         self.mlp = (
             nn.Sequential(nn.SiLU(), nn.Linear(time_emb_dim, out_ch))
             if time_emb_dim is not None
@@ -55,19 +47,15 @@ class ResnetBlock(nn.Module):
     def forward(self, x, time_emb=None):
         h = self.block1(x)
         
-        # Inject time step information
+        #h+= time embedd
         if self.mlp is not None and time_emb is not None:
             time_emb = self.mlp(time_emb)
-            h = h + time_emb[:, :, None, None]  # broadcast to (B, C, H, W)
-            
+            h = h + time_emb[:, :, None, None]  #(B, C, H, W)            
         h = self.block2(h)
         return h + self.residual_conv(x)
 
 class AttentionBlock(nn.Module):
-    """
-    Standard spatial Self-Attention block for convolutional feature maps.
-    Applied at bottleneck and lower spatial resolutions to model long-range dependencies.
-    """
+    # dung o bottleneck va lowresolution
     def __init__(self, channels, groups=8):
         super().__init__()
         self.group_norm = nn.GroupNorm(groups, channels)
@@ -80,30 +68,23 @@ class AttentionBlock(nn.Module):
         qkv = self.qkv(h_norm)
         q, k, v = torch.chunk(qkv, 3, dim=1)
         
-        # Reshape for matrix multiplication attention: (B, C, H, W) -> (B, H*W, C)
         q = q.reshape(b, c, h * w).transpose(-1, -2)
         k = k.reshape(b, c, h * w)
         v = v.reshape(b, c, h * w).transpose(-1, -2)
         
-        # Scaled dot-product attention
         attn = torch.bmm(q, k) * (c ** -0.5)
         attn = torch.softmax(attn, dim=-1)
         
-        # Context summary
         context = torch.bmm(attn, v)
         context = context.transpose(-1, -2).reshape(b, c, h, w)
         
         return x + self.proj(context)
 
 class UNet(nn.Module):
-    """
-    U-Net architecture with sinusoidal time embeddings, ResNet feature blocks,
-    attention layers, and skip connections for diffusion modeling.
-    """
     def __init__(self, in_channels=1, time_emb_dim=256, hidden_dims=[64, 128, 256, 256]):
         super().__init__()
         
-        # Timestep embedding MLP projection network
+        # time embedding
         self.time_mlp = nn.Sequential(
             SinusoidalPositionEmbeddings(time_emb_dim),
             nn.Linear(time_emb_dim, time_emb_dim),
@@ -111,10 +92,8 @@ class UNet(nn.Module):
             nn.Linear(time_emb_dim, time_emb_dim),
         )
         
-        # Initial convolution
         self.init_conv = nn.Conv2d(in_channels, hidden_dims[0], 3, padding=1)
         
-        # Downsampling path
         self.downs = nn.ModuleList([])
         in_ch = hidden_dims[0]
         for idx in range(len(hidden_dims) - 1):
@@ -127,29 +106,27 @@ class UNet(nn.Module):
             self.downs.append(nn.ModuleList([block1, block2, attn, down]))
             in_ch = out_ch
             
-        # Bottleneck (middle representation layer)
+        #Bottleneck
         self.mid_block1 = ResnetBlock(in_ch, in_ch, time_emb_dim=time_emb_dim)
         self.mid_attn = AttentionBlock(in_ch)
         self.mid_block2 = ResnetBlock(in_ch, in_ch, time_emb_dim=time_emb_dim)
         
-        # Upsampling path
+        #upsampling
         self.ups = nn.ModuleList([])
         reversed_dims = hidden_dims[::-1]
         for idx in range(len(reversed_dims) - 1):
             in_ch = reversed_dims[idx]
             out_ch = reversed_dims[idx + 1]
             
-            # Upsample spatial dimensions
             upsample = nn.ConvTranspose2d(in_ch, out_ch, 4, stride=2, padding=1)
             
-            # block1 input channels are doubled (out_ch * 2) due to skip connection concatenation
+            #skip connection concatenation-> dim*2
             block1 = ResnetBlock(out_ch * 2, out_ch, time_emb_dim=time_emb_dim)
             block2 = ResnetBlock(out_ch, out_ch, time_emb_dim=time_emb_dim)
             attn = AttentionBlock(out_ch) if idx <= len(reversed_dims) - 3 else nn.Identity()
             
             self.ups.append(nn.ModuleList([upsample, block1, block2, attn]))
             
-        # Final output projection block
         self.final_conv = nn.Sequential(
             nn.GroupNorm(8, hidden_dims[0]),
             nn.SiLU(),
@@ -157,13 +134,10 @@ class UNet(nn.Module):
         )
         
     def forward(self, x, time):
-        # 1. Project timesteps
         t = self.time_mlp(time)
         
-        # 2. Initial conv
         x = self.init_conv(x)
         
-        # 3. Down blocks (save skip connections)
         skip_connections = []
         for block1, block2, attn, down in self.downs:
             x = block1(x, t)
@@ -171,21 +145,16 @@ class UNet(nn.Module):
             x = attn(x)
             skip_connections.append(x)
             x = down(x)
-            
-        # 4. Bottleneck block
+
         x = self.mid_block1(x, t)
         x = self.mid_attn(x)
         x = self.mid_block2(x, t)
-        
-        # 5. Up blocks (pop skip connections)
+
         for upsample, block1, block2, attn in self.ups:
             x = upsample(x)
-            # Concatenate skip connection along the channel dimension
             skip = skip_connections.pop()
             x = torch.cat((x, skip), dim=1)
             x = block1(x, t)
             x = block2(x, t)
             x = attn(x)
-            
-        # 6. Final projection
         return self.final_conv(x)

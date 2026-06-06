@@ -14,10 +14,7 @@ from models.ddpm import extract
 from dataset.datasets import MNISTDataset, CelebADataset
 
 class DDPMSampler:
-    """
-    Standard DDPM sampler that runs the full reverse diffusion process
-    stochastically for T steps.
-    """
+
     def __init__(self, model):
         self.model = model
 
@@ -27,11 +24,6 @@ class DDPMSampler:
         return self.model.p_sample_loop(shape, device)
 
 class DDIMSampler:
-    """
-    Accelerated Denoising Diffusion Implicit Model (DDIM) sampler.
-    Allows sampling on a smaller subsequence of timesteps (e.g. 50 steps instead of 1000)
-    using deterministic transitions (if eta=0) or stochastic transitions (if eta > 0).
-    """
     def __init__(self, model):
         self.model = model
 
@@ -41,33 +33,26 @@ class DDIMSampler:
         batch_size = shape[0]
         T = self.model.num_timesteps
         
-        # Start from pure Gaussian noise
         img = torch.randn(shape, device=device)
         
-        # Subsequence of timesteps
-        # E.g. for steps=50, times = [-1, 19, 39, ..., 999]
         times = torch.linspace(-1, T - 1, steps + 1, dtype=torch.long)
         
-        # Iterate backwards from steps down to 1
+        # T' -> 1
         for i in reversed(range(1, steps + 1)):
             t = torch.full((batch_size,), times[i], device=device, dtype=torch.long)
             t_prev = torch.full((batch_size,), times[i-1], device=device, dtype=torch.long)
             
-            # Predict noise using U-Net
             epsilon_theta = self.model.unet(img, t)
-            
-            # Get cumulative products
             alphas_cumprod_t = extract(self.model.alphas_cumprod, t, img.shape)
             if times[i-1] == -1:
                 alphas_cumprod_t_prev = torch.ones_like(alphas_cumprod_t)
             else:
                 alphas_cumprod_t_prev = extract(self.model.alphas_cumprod, t_prev, img.shape)
                 
-            # 1. Estimate initial x_0:
-            # \hat{x}_0 = (x_t - \sqrt{1 - \bar{\alpha}_t} * \epsilon_\theta(x_t, t)) / \sqrt{\bar{\alpha}_t}
+            #uoc luong x0
             pred_x0 = (img - torch.sqrt(1.0 - alphas_cumprod_t) * epsilon_theta) / torch.sqrt(alphas_cumprod_t)
             
-            # 2. Compute posterior variance \sigma_t
+            #tinh sigma_t : var
             if eta == 0.0:
                 sigmas_t = torch.zeros_like(alphas_cumprod_t)
             else:
@@ -75,11 +60,10 @@ class DDIMSampler:
                     (1.0 - alphas_cumprod_t_prev) / (1.0 - alphas_cumprod_t) * (1.0 - alphas_cumprod_t / alphas_cumprod_t_prev)
                 )
                 
-            # 3. Compute direction pointing to x_t
+            #tinh cap nhat cho x(t-1)
             pred_dir_xt = torch.sqrt(1.0 - alphas_cumprod_t_prev - sigmas_t**2) * epsilon_theta
             
-            # 4. Generate next step sample
-            # x_{t-1} = \sqrt{\bar{\alpha}_{t-1}} * \hat{x}_0 + \text{direction} + \sigma_t * z_t
+            #tinh x(t-1)
             noise = torch.randn_like(img) if eta > 0.0 else torch.zeros_like(img)
             img = torch.sqrt(alphas_cumprod_t_prev) * pred_x0 + pred_dir_xt + sigmas_t * noise
             
