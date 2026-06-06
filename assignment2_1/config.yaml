@@ -1,0 +1,26 @@
+dataset: "mnist"          # Options: "mnist", "celeba"
+data_dir: "./data"
+image_size: 128
+batch_size: 64
+num_workers: 2
+val_split_ratio: 0.1      
+
+training:
+  epochs: 20
+  learning_rate: 0.001
+  weight_decay: 0.00001
+  device: "cuda"         
+  checkpoint_dir: "./checkpoints"
+  fid_interval: 5         
+  sample_interval: 5      
+  num_fid_samples: 500    
+
+base_vae:
+  latent_dim: 128
+  in_channels: 1          
+  hidden_dims: [32, 64, 128, 256]
+
+vq_vae:
+  num_embeddings: 64
+  embedding_dim: 32
+  hidden_dims: [32, 64, 128]

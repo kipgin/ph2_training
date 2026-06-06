@@ -1,0 +1,9 @@
+torch
+torchvision
+torchmetrics
+scipy
+pyyaml
+tqdm
+pillow
+numpy
+wandb

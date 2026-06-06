@@ -1,0 +1,32 @@
+# dataset
+dataset: "mnist"          
+data_dir: "./data"
+image_size: 32           #quick
+batch_size: 128
+num_workers: 2
+val_split_ratio: 0.1
+
+# Training configuration
+training:
+  epochs: 50
+  learning_rate: 0.0002
+  weight_decay: 0.0
+  device: "cuda"          # "cuda" or "cpu"
+  checkpoint_dir: "./checkpoints"
+  fid_interval: 10        # run FID each 10 epochs
+  sample_interval: 5      # Save sample generations every N epochs
+  num_fid_samples: 200    # Number of images to use for FID metric
+  wandb_project: "DDPM-Training"
+
+# U-Net Model parameters
+model:
+  time_emb_dim: 256
+  hidden_dims: [64, 128, 256, 256] # Keep it relatively lightweight
+  in_channels: 1          # Will be overridden dynamically (1 for MNIST, 3 for CelebA)
+
+# Diffusion schedule parameters
+diffusion:
+  beta_start: 0.0001
+  beta_end: 0.02
+  num_timesteps: 1000
+  schedule_name: "linear" # Options: "linear", "cosine"
