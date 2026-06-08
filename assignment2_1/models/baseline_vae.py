@@ -3,13 +3,14 @@ from torch import nn
 from torch.nn import functional as F
 
 class BaselineVAE(nn.Module):
-    def __init__(self,in_channels,hidden_dims,latent_dim):
+    def __init__(self,in_channels,hidden_dims,latent_dim,kld_weight=0.001):
         super().__init__()
         self.hidden_dims=hidden_dims
         self.latent_dim=latent_dim
         self.in_channels=in_channels
         self.encoder=self._build_encoder()
         self.decoder=self._build_decoder()
+        self.kld_weight=kld_weight
         with torch.no_grad():
             dummy_output = self.encoder(torch.ones(1,in_channels,128,128))
             flatten_dim = dummy_output.view(1, -1).size(1)
@@ -92,7 +93,7 @@ class BaselineVAE(nn.Module):
     
     def loss(self,**kwargs):
         batch_size = kwargs['x'].size(0)
-        recon_loss = F.mse_loss(kwargs['x_recon'], kwargs['x'], reduction='sum') / batch_size
+        recon_loss = F.mse_loss(kwargs['x_recon'], kwargs['x']) / batch_size
         kld_loss = -0.5 * torch.sum(1 + kwargs['logvar'] - kwargs['mu'].pow(2) - kwargs['logvar'].exp()) / batch_size
         return recon_loss + kld_loss
         

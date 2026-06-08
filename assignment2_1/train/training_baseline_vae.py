@@ -53,7 +53,8 @@ class VAETrainer:
         self.model = BaselineVAE(
             in_channels=in_channels,
             hidden_dims=self.config['base_vae']['hidden_dims'],
-            latent_dim=self.config['base_vae']['latent_dim']
+            latent_dim=self.config['base_vae']['latent_dim'],
+            kld_weight=self.config['base_vae']['kld_weight']
         ).to(self.device)
         
         

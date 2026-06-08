@@ -14,6 +14,7 @@ training:
   fid_interval: 5         
   sample_interval: 5      
   num_fid_samples: 500    
+  kld_weight: 0.001
 
 base_vae:
   latent_dim: 128
