@@ -34,11 +34,11 @@ class TestTrainerClasses(unittest.TestCase):
         # 1. Setup dummy input batch (size 2)
         x = torch.randn(2, self.in_channels, 128, 128)
         
-        # 2. Forward pass
-        x_recon, mu, logvar = self.model(x)
+        # # 2. Forward pass
+        # x_recon, mu, logvar = self.model(x)
         
         # 3. Calculate loss
-        loss = self.model.loss(x=x, x_recon=x_recon, mu=mu, logvar=logvar)
+        loss,recon_loss,kld_loss = self.model.loss(x=x,kld_weight=0.0001)
         
         # Zero out existing gradients
         self.model.zero_grad()
@@ -73,8 +73,8 @@ class TestTrainerClasses(unittest.TestCase):
         
         # Single optimization step
         optimizer.zero_grad()
-        x_recon, mu, logvar = self.model(x)
-        loss = self.model.loss(x=x, x_recon=x_recon, mu=mu, logvar=logvar)
+        # x_recon, mu, logvar = self.model(x)
+        loss,recon_loss,kld_loss = self.model.loss(x=x,kld_weight=0.0001)
         loss.backward()
         optimizer.step()
         
@@ -126,7 +126,8 @@ class TestTrainerClasses(unittest.TestCase):
                 'checkpoint_dir': os.path.join(self.temp_dir, 'checkpoints'),
                 'fid_interval': 1,
                 'sample_interval': 1,
-                'num_fid_samples': 2
+                'num_fid_samples': 2,
+                'kld_weight': 0.001
             }
         }
         

@@ -22,7 +22,7 @@ __pycache__
 # Ignore all model files
 *.pt
 
-.env
+*.env
 **/.env
 
 # Ignore directories for checkpoints, datasets, and results

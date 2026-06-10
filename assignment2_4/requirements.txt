@@ -1,0 +1,8 @@
+torch
+diffusers
+transformers
+pyyaml
+pytest
+scipy
+huggingface_hub
+python-dotenv

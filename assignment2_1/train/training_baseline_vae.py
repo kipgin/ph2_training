@@ -25,6 +25,7 @@ class VAETrainer:
         self.batch_size = config['batch_size']
         self.image_size = config['image_size']
         self.num_workers = config['num_workers']
+        self.kld_weight = config['training']['kld_weight']
         
         if self.dataset_name == 'mnist':
             self.dataset_wrapper = MNISTDataset(
@@ -54,7 +55,7 @@ class VAETrainer:
             in_channels=in_channels,
             hidden_dims=self.config['base_vae']['hidden_dims'],
             latent_dim=self.config['base_vae']['latent_dim'],
-            kld_weight=self.config['base_vae']['kld_weight']
+            # kld_weight=self.config['base_vae']['kld_weight']
         ).to(self.device)
         
         
@@ -100,16 +101,29 @@ class VAETrainer:
         
         loop = tqdm(self.train_loader, desc=f"Epoch [{epoch+1}/{self.config['training']['epochs']}]")
         for batch_idx, (imgs, _) in enumerate(loop):
-            imgs = imgs.to(self.device)
-            batch_size = imgs.size(0)
+            # imgs = imgs.to(self.device)
+            # batch_size = imgs.size(0)
             
             self.optimizer.zero_grad()
             
-            x_recon, mu, logvar = self.model(imgs)
-            
-            recon_loss = F.mse_loss(x_recon, imgs, reduction='sum') / batch_size
-            kld_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp()) / batch_size
-            loss = recon_loss + kld_loss
+            # x_recon, mu, logvar = self.model(imgs)
+            # recon_loss = F.mse_loss(x_recon, imgs, reduction='sum') / batch_size
+            # kld_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp()) / batch_size
+            # loss = recon_loss + kld_loss
+            # print('============  start')
+            # print(type(imgs))
+            # print(imgs.shape)
+            # print(imgs.device)
+            # imgs = imgs.to(self.device)
+            imgs = imgs.to(self.device)
+            # print(imgs.device)
+            # print(self.config)
+            # print(self.device)
+            # print('==================== HERE')
+            # print('=============== HERE')
+            # print(imgs.device)
+            # print(self.device)
+            loss,recon_loss,kld_loss = self.model.loss(imgs,self.kld_weight)
             
             loss.backward()
             self.optimizer.step()
@@ -140,14 +154,14 @@ class VAETrainer:
         with torch.no_grad():
             for imgs, _ in self.val_loader:
                 imgs = imgs.to(self.device)
-                batch_size = imgs.size(0)
+                # batch_size = imgs.size(0)
                 
-                x_recon, mu, logvar = self.model(imgs)
-                
-                recon_loss = F.mse_loss(x_recon, imgs, reduction='sum') / batch_size
-                kld_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp()) / batch_size
-                loss = recon_loss + kld_loss
-                
+                # x_recon, mu, logvar = self.model(imgs)
+                # recon_loss = F.mse_loss(x_recon, imgs, reduction='mean') / batch_size
+                # kld_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp()) / batch_size
+                # loss = recon_loss + kld_loss
+                loss,recon_loss,kld_loss=self.model.loss(imgs,self.kld_weight)
+
                 total_loss += loss.item()
                 total_recon += recon_loss.item()
                 total_kld += kld_loss.item()
