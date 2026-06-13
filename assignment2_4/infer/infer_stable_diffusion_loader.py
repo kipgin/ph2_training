@@ -4,7 +4,7 @@ from diffusers import PNDMScheduler
 
 from models.stable_diffusion_loader import StableDiffusionLoader
 
-def infer_stable_diffusion_loader(config_path, prompts):
+def infer_stable_diffusion_loader(config_path):
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
 
@@ -22,21 +22,21 @@ def infer_stable_diffusion_loader(config_path, prompts):
         config=loader_config
     )
 
-    batch_size = len(prompts)
+    # batch_size = len(prompts)
 
-    # create random noise for each prompt in the correct dtype and device
-    noise = torch.randn(
-        batch_size, 
-        model.unet.config.in_channels, 
-        model.unet.config.sample_size, 
-        model.unet.config.sample_size, 
-        device=device,
-        dtype=dtype
-    )
+    # # create random noise for each prompt in the correct dtype and device
+    # noise = torch.randn(
+    #     batch_size, 
+    #     model.unet.config.in_channels, 
+    #     model.unet.config.sample_size, 
+    #     model.unet.config.sample_size, 
+    #     device=device,
+    #     dtype=dtype
+    # )
 
     num_steps = loader_config.get('num_steps', 50)
     guidance_scale = loader_config.get('guidance_scale', 7.5)
 
-    generated_images = model.forward(noise, prompts, num_steps, device, guidance_scale=guidance_scale)
+    # generated_images = model.forward(noise, prompts, num_steps, device, guidance_scale=guidance_scale)
     
-    return generated_images
+    return model,num_steps

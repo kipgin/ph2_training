@@ -24,31 +24,24 @@ class Attention(nn.Module):
         context = context if context is not None else x
         k = self.to_k(context)
         v = self.to_v(context)
-        
+
         bsz, q_len, _ = q.shape
         k_len = k.shape[1]
-        
-        q = q.view(bsz, q_len, h, -1).transpose(1, 2).reshape(bsz * h, q_len, -1)
-        k = k.view(bsz, k_len, h, -1).transpose(1, 2).reshape(bsz * h, k_len, -1)
-        v = v.view(bsz, k_len, h, -1).transpose(1, 2).reshape(bsz * h, k_len, -1)
-        
-        # Sliced attention to prevent OOM on large sequence lengths
-        chunk_size = 1024
-        if q_len > chunk_size:
-            out = []
-            for i in range(0, q_len, chunk_size):
-                q_chunk = q[:, i:i+chunk_size, :]
-                sim_chunk = torch.bmm(q_chunk, k.transpose(-1, -2)) * self.scale
-                attn_chunk = sim_chunk.softmax(dim=-1)
-                out_chunk = torch.bmm(attn_chunk, v)
-                out.append(out_chunk)
-            out = torch.cat(out, dim=1)
-        else:
-            sim = torch.bmm(q, k.transpose(-1, -2)) * self.scale
-            attn = sim.softmax(dim=-1)
-            out = torch.bmm(attn, v)
-        out = out.view(bsz, h, q_len, -1).transpose(1, 2).reshape(bsz, q_len, -1)
-        
+        head_dim = q.shape[-1] // h
+
+        # Reshape to (B, heads, seq_len, head_dim) required by SDPA
+        q = q.view(bsz, q_len, h, head_dim).transpose(1, 2)   # (B, h, q_len, d)
+        k = k.view(bsz, k_len, h, head_dim).transpose(1, 2)   # (B, h, k_len, d)
+        v = v.view(bsz, k_len, h, head_dim).transpose(1, 2)   # (B, h, k_len, d)
+
+        # Memory-efficient scaled dot-product attention (Flash Attention when available).
+        # Never materialises the full N² attention matrix — O(N) peak memory vs O(N²)
+        # for the previous manual chunked bmm loop, which still OOM-ed at q_len=4096.
+        # scale=None uses the default 1/sqrt(head_dim), identical to self.scale.
+        out = F.scaled_dot_product_attention(q, k, v)         # (B, h, q_len, d)
+
+        out = out.transpose(1, 2).reshape(bsz, q_len, -1)     # (B, q_len, inner_dim)
+
         for layer in self.to_out:
             out = layer(out)
         return out
@@ -233,21 +226,24 @@ class VAEAttention(nn.Module):
     def forward(self, x):
         bsz, c, h, w = x.shape
         residual = x
-        
+
         x = self.group_norm(x)
-        x = x.permute(0, 2, 3, 1).reshape(bsz, h * w, c)
-        
-        q = self.to_q(x)
+        x = x.permute(0, 2, 3, 1).reshape(bsz, h * w, c)  # (B, H*W, C)
+
+        q = self.to_q(x)  # (B, H*W, C)
         k = self.to_k(x)
         v = self.to_v(x)
-        
-        scale = c ** -0.5
-        sim = torch.matmul(q, k.transpose(-1, -2)) * scale
-        attn = sim.softmax(dim=-1)
-        
-        out = torch.matmul(attn, v)
+
+        # Treat channel dim as a single head for SDPA: (B, 1, H*W, C)
+        # Memory-efficient — avoids the (B, H*W, H*W) O(N²) attention matrix.
+        q = q.unsqueeze(1)
+        k = k.unsqueeze(1)
+        v = v.unsqueeze(1)
+        out = F.scaled_dot_product_attention(q, k, v)  # (B, 1, H*W, C)
+        out = out.squeeze(1)                           # (B, H*W, C)
+
         for layer in self.to_out:
             out = layer(out)
-            
+
         out = out.reshape(bsz, h, w, c).permute(0, 3, 1, 2)
         return residual + out

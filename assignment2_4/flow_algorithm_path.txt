@@ -1,0 +1,21 @@
+==================================================
+DYNAMIC TENSOR FLOW & FEATURE MAP SHAPES
+==================================================
+
+[TextEncoder][CLIPTextEmbeddings]: Feature Map Shape -> [1, 77, 768]
+[TextEncoder][CLIPEncoder]: Feature Map Shape -> [1, 77, 768]
+[TextEncoder][LayerNorm]: Feature Map Shape -> [1, 77, 768]
+[TextEncoder][CLIPTextEmbeddings]: Feature Map Shape -> [1, 77, 768]
+[TextEncoder][CLIPEncoder]: Feature Map Shape -> [1, 77, 768]
+[TextEncoder][LayerNorm]: Feature Map Shape -> [1, 77, 768]
+[UNet][Timesteps]: Feature Map Shape -> [2, 320]
+[UNet][TimestepEmbedding]: Feature Map Shape -> [2, 1280]
+[UNet][Conv2d]: Feature Map Shape -> [2, 320, 64, 64]
+[UNet][UNetMidBlock2DCrossAttn]: Feature Map Shape -> [2, 1280, 8, 8]
+[UNet][GroupNorm]: Feature Map Shape -> [2, 320, 64, 64]
+[UNet][SiLU]: Feature Map Shape -> [2, 320, 64, 64]
+[UNet][Conv2d]: Feature Map Shape -> [2, 4, 64, 64]
+[VAE][Conv2d]: Feature Map Shape -> [1, 4, 64, 64]
+[VAE][Decoder]: Feature Map Shape -> [1, 3, 512, 512]
+[VAE][Conv2d]: Feature Map Shape -> [1, 4, 64, 64]
+[VAE][Decoder]: Feature Map Shape -> [1, 3, 512, 512]

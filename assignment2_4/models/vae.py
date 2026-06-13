@@ -5,6 +5,7 @@ import torch.nn.functional as F
 
 from .resnet import ResnetBlock2D
 from .attention import VAEAttention
+from diffusers import AutoencoderKL as HFAutoencoderKL
 
 class VAEDownsample2D(nn.Module):
     def __init__(self, in_channels, out_channels=None):
@@ -216,7 +217,7 @@ class AutoencoderKL(nn.Module):
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
             
-        from diffusers import AutoencoderKL as HFAutoencoderKL
+        # from diffusers import AutoencoderKL as HFAutoencoderKL
         model = cls(**kwargs)
         hf_model = HFAutoencoderKL.from_pretrained(model_id, subfolder=subfolder, torch_dtype=torch_dtype)
         model = model.to(dtype=torch_dtype)

@@ -27,12 +27,6 @@ def test_transformer_internals():
         
         # Step 3: Reshape/permute for block input
         custom_block_in = custom_proj_in.permute(0, 2, 3, 1).reshape(2, 16*16, -1)
-        # In diffusers, how does it prepare the input for blocks?
-        # Let's inspect hf forward. It does:
-        # hidden_states = hidden_states.transpose(1, 2).reshape(batch, height * width, inner_dim)
-        # Wait, since proj_in has output of shape (B, inner_dim, H, W) in both,
-        # let's check what the input to the first block is in HF.
-        # We can run HF blocks and custom blocks separately.
         custom_block_out = custom_block_in
         for block in custom.transformer_blocks:
             custom_block_out = block(custom_block_out, context=context)

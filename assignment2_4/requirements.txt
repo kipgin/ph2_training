@@ -1,8 +1,11 @@
 torch
 diffusers
 transformers
+accelerate
 pyyaml
 pytest
 scipy
 huggingface_hub
 python-dotenv
+peft
+bitsandbytes

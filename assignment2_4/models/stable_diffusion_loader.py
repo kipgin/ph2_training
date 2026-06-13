@@ -75,6 +75,7 @@ class StableDiffusionLoader(nn.Module):
             uncond_embeddings = self.text_encoder(uncond_inputs.input_ids)[0]
 
         # Concatenate uncond and cond embeddings into a single batch
+        
         text_embeddings = torch.cat([uncond_embeddings, text_embeddings])
         return text_embeddings
     
@@ -85,6 +86,9 @@ class StableDiffusionLoader(nn.Module):
             # Duplicate latents for CFG
             latent_model_input = torch.cat([latents] * 2) if guidance_scale > 1.0 else latents
             
+            # if guidance_scale > 1.0 :
+            #     text_embeddings = 
+
             with torch.no_grad():
                 noise_pred = self.unet(latent_model_input, t, encoder_hidden_states=text_embeddings).sample
             
@@ -108,6 +112,11 @@ class StableDiffusionLoader(nn.Module):
 
         with autocast_ctx:
             text_embeddings = self.encode_prompt(prompt, device)
+            
+            if guidance_scale <= 1.0 :
+                uncond_embeddings, original_text_embeddings = text_embeddings.chunk(2, dim=0)
+                text_embeddings = original_text_embeddings
+            
             noise = noise.to(dtype=self.torch_dtype)
             latents = self.sample(noise, text_embeddings, num_steps, device, guidance_scale=guidance_scale)
             with torch.no_grad():

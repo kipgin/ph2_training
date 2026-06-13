@@ -1,6 +1,9 @@
 import torch
 import torch.nn as nn
-
+from transformers import CLIPTokenizer
+from transformers import CLIPTextModel as HFCLIPTextModel
+from diffusers import PNDMScheduler
+from diffusers import AutoencoderKL as HFAutoencoderKL
 # Re-expose all symbols for backward compatibility with existing tests and notebooks
 from .embeddings import get_timestep_embedding, TimeEmbedding, CLIPTextEmbeddings
 from .resnet import ResnetBlock2D
@@ -52,8 +55,7 @@ class StableDiffusion(nn.Module):
             clip_kwargs = config.get("clip_config", {})
             scheduler_kwargs = config.get("scheduler_config", {})
             
-        from transformers import CLIPTokenizer
-        from diffusers import PNDMScheduler
+        
         
         # Load tokenizer and scheduler
         self.tokenizer = CLIPTokenizer.from_pretrained(model_id, subfolder='tokenizer')
@@ -63,7 +65,7 @@ class StableDiffusion(nn.Module):
         if self.text_encoder is None:
             self.text_encoder = CLIPTextModel.from_pretrained(model_id, subfolder='text_encoder', torch_dtype=self.torch_dtype, **clip_kwargs).to(device)
         else:
-            from transformers import CLIPTextModel as HFCLIPTextModel
+            # from transformers import CLIPTextModel as HFCLIPTextModel
             hf_clip = HFCLIPTextModel.from_pretrained(model_id, subfolder="text_encoder", torch_dtype=self.torch_dtype)
             self.text_encoder.to(device).to(dtype=self.torch_dtype)
             result = self.text_encoder.load_state_dict(hf_clip.state_dict(), strict=False)
@@ -82,7 +84,7 @@ class StableDiffusion(nn.Module):
         if self.vae is None:
             self.vae = AutoencoderKL.from_pretrained(model_id, subfolder='vae', torch_dtype=self.torch_dtype, **vae_kwargs).to(device)
         else:
-            from diffusers import AutoencoderKL as HFAutoencoderKL
+            
             hf_vae = HFAutoencoderKL.from_pretrained(model_id, subfolder="vae", torch_dtype=self.torch_dtype)
             self.vae.to(device).to(dtype=self.torch_dtype)
             result = self.vae.load_state_dict(hf_vae.state_dict(), strict=False)
@@ -119,7 +121,7 @@ class StableDiffusion(nn.Module):
         if "cuda" in str(device):
             torch.cuda.empty_cache()
 
-    def forward(self, prompts, noise, num_steps=50, device=None, guidance_scale=7.5):
+    def forward(self, prompts, noise, num_steps=50, device=None, guidance_scale=7.5, negative_prompts=None):
         if device is None:
             if self.unet is not None:
                 device = next(self.unet.parameters()).device
@@ -128,6 +130,11 @@ class StableDiffusion(nn.Module):
                 
         if isinstance(prompts, str):
             prompts = [prompts]
+
+        if negative_prompts is None:
+            negative_prompts = [""] * len(prompts)
+        elif isinstance(negative_prompts, str):
+            negative_prompts = [negative_prompts] * len(prompts)
             
         device_type = "cuda" if "cuda" in str(device) else "cpu"
         autocast_ctx = torch.autocast(device_type=device_type, dtype=self.torch_dtype) if device_type == "cuda" else torch.no_grad()
@@ -144,21 +151,33 @@ class StableDiffusion(nn.Module):
                 
             # Generate unconditional (negative) embeddings for Classifier-Free Guidance
             uncond_inputs = self.tokenizer(
-                [""] * len(prompts),
+                negative_prompts,
                 padding="max_length", max_length=self.tokenizer.model_max_length,
                 truncation=True, return_tensors="pt"
             ).to(device)
             with torch.no_grad():
                 uncond_embeddings = self.text_encoder(uncond_inputs.input_ids)[0]
                 
-            # Concatenate uncond and cond embeddings into a single batch
-            text_embeddings = torch.cat([uncond_embeddings, text_embeddings])
+            # if guidance_scale > 1.0:
+            #     text_embeddings = torch.cat([uncond_embeddings, text_embeddings])
+            #     latent_model_input = torch.cat([latents] * 2)
+            # else:
+            #     latent_model_input = latents
             
             # 2. Denoising loop
             self.scheduler.set_timesteps(num_steps, device=device)
             # Scale initial noise by scheduler's sigma (required for PNDM/DDIM schedulers)
-            latents = noise.to(device, dtype=self.torch_dtype) * self.scheduler.init_noise_sigma
             
+            latents = noise.to(device, dtype=self.torch_dtype) * self.scheduler.init_noise_sigma
+
+
+            # modify text_embedd <-- CFG
+            if guidance_scale > 1.0:
+                text_embeddings = torch.cat([uncond_embeddings, text_embeddings])
+                latent_model_input = torch.cat([latents] * 2)
+            else:
+                latent_model_input = latents
+
             for t in self.scheduler.timesteps:
                 # Duplicate latents for CFG
                 latent_model_input = torch.cat([latents] * 2) if guidance_scale > 1.0 else latents

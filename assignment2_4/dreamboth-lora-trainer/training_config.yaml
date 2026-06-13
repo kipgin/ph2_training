@@ -1,0 +1,35 @@
+model:
+  pretrained_model_name_or_path: "stable-diffusion-v1-5/stable-diffusion-v1-5"
+  revision: "fp16"
+
+data:
+  instance_data_dir: "./data/instance_images"
+  class_data_dir: "./data/prior_images"
+  instance_prompt: "a photo of sks person"
+  class_prompt: "a photo of a person"
+  resolution: 512
+  center_crop: true
+
+training:
+  batch_size: 2                     # Per-GPU batch size; prior_preservation doubles → effective 4
+  gradient_accumulation_steps: 1    # Effective batch already large enough
+  num_workers: 2                    # Background prefetch workers (eliminates GPU idle between steps)
+  learning_rate: 0.0001             # 1e-4: LoRA can handle higher learning rates than full finetuning
+  max_train_steps: 800              # 10-20 images only need ~400-800 steps
+  lora_rank: 8
+  lora_alpha: 8
+  mixed_precision: "fp16"           # Crucial for Colab T4/L4 memory & speed
+  gradient_checkpointing: true      # Minimizes memory usage to fit on T4 (16GB VRAM)
+  use_8bit_adam: true               # Saves significant optimizer state memory
+  with_prior_preservation: true     # Use class regularization to avoid overfitting
+  prior_loss_weight: 1.0            # Balance factor for class regularization loss
+  seed: 42
+  lr_scheduler: "constant"
+  lr_warmup_steps: 0
+  train_text_encoder: false
+
+logging:
+  logger_type: "wandb"
+  project_name: "dreamboth-lora-skx"
+  output_dir: "./checkpoints"
+  save_steps: 200
