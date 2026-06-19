@@ -32,3 +32,10 @@ __pycache__
 
 # Ignore Weights & Biases (wandb) local runs and configurations
 **/wandb/
+
+
+*.safetensors
+*.safetensor
+
+desktop.ini
+**/desktop.ini
