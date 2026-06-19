@@ -211,14 +211,16 @@ def main():
     )
 
     global_step = 0
-    log_loss = 0.0
-    log_instance_loss = 0.0
-    log_prior_loss = 0.0
     
     for epoch in range(num_train_epochs):
         unet.train()
         if config["training"].get("train_text_encoder", False) and text_encoder is not None:
             text_encoder.train()
+
+        # Reset epoch-wise loss accumulation
+        log_loss = 0.0
+        log_instance_loss = 0.0
+        log_prior_loss = 0.0
 
         for step, batch in enumerate(train_dataloader):
             with accelerator.accumulate(unet):

@@ -11,7 +11,7 @@ data:
   center_crop: true
 
 training:
-  batch_size: 2                     # Per-GPU batch size; prior_preservation doubles → effective 4
+  batch_size: 4                    # Per-GPU batch size; prior_preservation doubles → effective 4
   gradient_accumulation_steps: 1    # Effective batch already large enough
   num_workers: 2                    # Background prefetch workers (eliminates GPU idle between steps)
   learning_rate: 0.0001             # 1e-4: LoRA can handle higher learning rates than full finetuning
@@ -26,7 +26,7 @@ training:
   seed: 42
   lr_scheduler: "constant"
   lr_warmup_steps: 0
-  train_text_encoder: false
+  train_text_encoder: true
 
 logging:
   logger_type: "wandb"

@@ -97,7 +97,7 @@ def test_training_pipeline_step():
         "input_ids": torch.randint(0, 100, (2, 10))
     }
     
-    loss = pipeline.training_step(batch)
+    loss, loss_instance, loss_prior = pipeline.training_step(batch)
     assert isinstance(loss, torch.Tensor)
     assert loss.ndim == 0 # Scalar tensor
     
@@ -119,6 +119,6 @@ def test_training_pipeline_step():
         "input_ids": torch.randint(0, 100, (4, 10))
     }
     
-    loss_prior = pipeline_prior.training_step(batch_prior)
-    assert isinstance(loss_prior, torch.Tensor)
-    assert loss_prior.ndim == 0 # Scalar tensor
+    loss_total, loss_instance, loss_prior_val = pipeline_prior.training_step(batch_prior)
+    assert isinstance(loss_total, torch.Tensor)
+    assert loss_total.ndim == 0 # Scalar tensor

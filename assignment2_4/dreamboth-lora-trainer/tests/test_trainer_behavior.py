@@ -290,7 +290,7 @@ def test_gradient_calculation_and_updates():
     }
     
     # Run forward pass
-    loss = pipeline.training_step(batch)
+    loss, loss_instance, loss_prior = pipeline.training_step(batch)
     
     # Verify loss output is correct
     assert isinstance(loss, torch.Tensor)
