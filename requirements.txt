@@ -11,3 +11,8 @@ huggingface-hub
 tyro
 jaxtyping
 matplotlib
+diffusers
+transformers
+optimum
+accelerate
+optimum-quanto

@@ -1,7 +1,7 @@
 # Ignore all image files
-*.jpg
-*.png
-*.jpeg
+# *.jpg
+# *.png
+# *.jpeg
 
 # Ignore pycharm and system files
 .DS_Store
