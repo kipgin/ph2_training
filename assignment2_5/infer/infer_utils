@@ -1,0 +1,44 @@
+import torch
+import matplotlib.pyplot as plt
+import numpy as np
+
+def plot_trajectories(trajs, title, save_path, num_to_plot=50):
+    """
+    trajs: Tensor of shape [Steps, Batch, 2]
+    """
+    plt.figure(figsize=(6, 6))
+    trajs_np = trajs.cpu().numpy()
+    
+    plt.scatter(trajs_np[-1, :, 0], trajs_np[-1, :, 1], s=1, alpha=0.2, c='gray')
+
+
+    for i in range(num_to_plot):
+        path = trajs_np[:, i, :]
+        plt.plot(path[:, 0], path[:, 1], alpha=0.3, color='blue', linewidth=1)
+        
+        for idx in [len(path)//4, len(path)//2, 3*len(path)//4]:
+            p1 = path[idx]
+            p2 = path[idx+1]
+            plt.annotate('', xy=p2, xytext=p1,
+                         arrowprops=dict(arrowstyle='->', color='red', lw=1))
+
+    plt.title(title)
+    plt.xlim(-8, 8); plt.ylim(-8, 8)
+    plt.savefig(save_path)
+    plt.close()
+
+def plot_snapshots(trajs, title, save_path):
+    """Plots the distribution of points at 0%, 25%, 50%, 75%, 100% of the process."""
+    indices = [0, len(trajs)//4, len(trajs)//2, 3*len(trajs)//4, len(trajs)-1]
+    fig, axs = plt.subplots(1, 5, figsize=(20, 4))
+    
+    for i, step_idx in enumerate(indices):
+        points = trajs[step_idx].cpu().numpy()
+        axs[i].scatter(points[:, 0], points[:, 1], s=2, alpha=0.5)
+        axs[i].set_title(f"T={step_idx/len(trajs):.2f}")
+        axs[i].set_xlim(-7, 7); axs[i].set_ylim(-7, 7)
+        axs[i].set_aspect('equal')
+    
+    plt.suptitle(title)
+    plt.savefig(save_path)
+    plt.close()
