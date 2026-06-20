@@ -1,0 +1,137 @@
+# Train Flow Matching (Optimal Transport)
+python train/train_velocity_net.py --iters 50000 --batch_size 4096 --lr 1e-4 --output_dir checkpoints
+
+# Train DDPM
+python train/train_ddpm.py --iters 50000 --batch_size 4096 --steps 1000 --lr 1e-4 --output_dir checkpoints_ddpm
+
+
+# Inference for Flow Matching
+
+python infer/infer_pipeline.py --mode fm --checkpoint checkpoints/velocity_model.pth --steps_list 1 5 10 50
+
+# Inference for DDPM
+python infer/infer_pipeline.py --mode ddpm --checkpoint checkpoints_ddpm/ddpm_model.pth --steps_list 1 5 10 50
+
+
+#reflow 
+python train/train_reflow.py
+
+#scripts to download
+wget -c https://huggingface.co/Comfy-Org/flux1-dev/blob/main/flux1-dev-fp8.safetensors -P ./models/checkpoints/
+
+(comfyui_env) root@133acf5f2d40:/workspace/ph2_training/ComfyUI# cd custom_nodes/
+(comfyui_env) root@133acf5f2d40:/workspace/ph2_training/ComfyUI/custom_nodes# git clone https://github.com/ltdrdata/ComfyUI-Manager.git
+
+
+train velocity net :
+
+Starting training for 50000 iterations...
+Iter     0 | Loss: 13.883696
+Iter  1000 | Loss: 5.634428
+Iter  2000 | Loss: 5.811261
+Iter  3000 | Loss: 5.620399
+Iter  4000 | Loss: 5.385446
+Iter  5000 | Loss: 5.058612
+Iter  6000 | Loss: 4.825161
+Iter  7000 | Loss: 5.111128
+Iter  8000 | Loss: 5.032343
+Iter  9000 | Loss: 4.850611
+Iter 10000 | Loss: 4.913403
+Iter 11000 | Loss: 4.842734
+Iter 12000 | Loss: 4.911552
+Iter 13000 | Loss: 4.876324
+Iter 14000 | Loss: 4.928334
+Iter 15000 | Loss: 4.718201
+Iter 16000 | Loss: 4.824897
+Iter 17000 | Loss: 4.648540
+Iter 18000 | Loss: 4.973188
+Iter 19000 | Loss: 4.963222
+Iter 20000 | Loss: 4.811766
+Iter 21000 | Loss: 4.846485
+Iter 22000 | Loss: 4.819344
+Iter 23000 | Loss: 4.868772
+Iter 24000 | Loss: 4.968395
+Iter 25000 | Loss: 4.728131
+Iter 26000 | Loss: 4.811448
+Iter 27000 | Loss: 4.790311
+Iter 28000 | Loss: 4.977993
+Iter 29000 | Loss: 4.786512
+Iter 30000 | Loss: 4.866697
+Iter 31000 | Loss: 4.995460
+Iter 32000 | Loss: 4.814828
+Iter 33000 | Loss: 4.621560
+Iter 34000 | Loss: 4.862507
+Iter 35000 | Loss: 4.889762
+Iter 36000 | Loss: 4.842568
+Iter 37000 | Loss: 4.851469
+Iter 38000 | Loss: 4.753512
+Iter 39000 | Loss: 4.982886
+Iter 40000 | Loss: 4.850040
+Iter 41000 | Loss: 4.785624
+Iter 42000 | Loss: 4.863659
+Iter 43000 | Loss: 4.879505
+Iter 44000 | Loss: 4.736156
+Iter 45000 | Loss: 4.976346
+Iter 46000 | Loss: 4.879832
+Iter 47000 | Loss: 4.819908
+Iter 48000 | Loss: 4.902495
+Iter 49000 | Loss: 4.885968
+
+
+train ddpm :
+
+Training DDPM on 8Gaussians...
+Iter     0 | Loss: 0.980484
+Iter  1000 | Loss: 0.457501
+Iter  2000 | Loss: 0.515416
+Iter  3000 | Loss: 0.462488
+Iter  4000 | Loss: 0.429993
+Iter  5000 | Loss: 0.401535
+Iter  6000 | Loss: 0.396918
+Iter  7000 | Loss: 0.408495
+Iter  8000 | Loss: 0.399523
+Iter  9000 | Loss: 0.407576
+Iter 10000 | Loss: 0.377720
+Iter 11000 | Loss: 0.384620
+Iter 12000 | Loss: 0.385153
+Iter 13000 | Loss: 0.355471
+Iter 14000 | Loss: 0.381040
+Iter 15000 | Loss: 0.359558
+Iter 16000 | Loss: 0.362708
+Iter 17000 | Loss: 0.365421
+Iter 18000 | Loss: 0.356480
+Iter 19000 | Loss: 0.361669
+Iter 20000 | Loss: 0.358619
+Iter 21000 | Loss: 0.368478
+Iter 22000 | Loss: 0.367942
+Iter 23000 | Loss: 0.383579
+Iter 24000 | Loss: 0.373216
+Iter 25000 | Loss: 0.372830
+Iter 26000 | Loss: 0.363188
+Iter 27000 | Loss: 0.350266
+Iter 28000 | Loss: 0.355450
+Iter 29000 | Loss: 0.373548
+Iter 30000 | Loss: 0.356521
+Iter 31000 | Loss: 0.374740
+Iter 32000 | Loss: 0.369374
+Iter 33000 | Loss: 0.383764
+Iter 34000 | Loss: 0.364471
+Iter 35000 | Loss: 0.357574
+Iter 36000 | Loss: 0.368757
+Iter 37000 | Loss: 0.369433
+Iter 38000 | Loss: 0.354390
+Iter 39000 | Loss: 0.351070
+Iter 40000 | Loss: 0.374642
+Iter 41000 | Loss: 0.361635
+Iter 42000 | Loss: 0.349516
+Iter 43000 | Loss: 0.379085
+Iter 44000 | Loss: 0.364980
+Iter 45000 | Loss: 0.361740
+Iter 46000 | Loss: 0.359472
+Iter 47000 | Loss: 0.366406
+Iter 48000 | Loss: 0.365269
+Iter 49000 | Loss: 0.367472
+
+
+
+-- infer

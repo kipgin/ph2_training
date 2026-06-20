@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from model.score_net import ScoreNet
+from model.velocity_net import ScoreNet
 from data.datasets import Dataset8Gaussians
 
 def train():

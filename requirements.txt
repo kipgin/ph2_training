@@ -7,3 +7,7 @@ tqdm
 pillow
 numpy
 wandb
+huggingface-hub
+tyro
+jaxtyping
+matplotlib

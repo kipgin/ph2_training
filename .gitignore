@@ -39,3 +39,6 @@ __pycache__
 
 desktop.ini
 **/desktop.ini
+
+ComfyUI
+assignment2_5/checkpoints_ddpm

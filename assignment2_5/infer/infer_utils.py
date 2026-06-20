@@ -16,11 +16,13 @@ def plot_trajectories(trajs, title, save_path, num_to_plot=50):
         path = trajs_np[:, i, :]
         plt.plot(path[:, 0], path[:, 1], alpha=0.3, color='blue', linewidth=1)
         
-        for idx in [len(path)//4, len(path)//2, 3*len(path)//4]:
-            p1 = path[idx]
-            p2 = path[idx+1]
-            plt.annotate('', xy=p2, xytext=p1,
-                         arrowprops=dict(arrowstyle='->', color='red', lw=1))
+        # Use set to avoid duplicate arrow annotations and ensure index + 1 is within bounds
+        for idx in sorted(list(set([len(path)//4, len(path)//2, 3*len(path)//4]))):
+            if idx + 1 < len(path):
+                p1 = path[idx]
+                p2 = path[idx+1]
+                plt.annotate('', xy=p2, xytext=p1,
+                             arrowprops=dict(arrowstyle='->', color='red', lw=1))
 
     plt.title(title)
     plt.xlim(-8, 8); plt.ylim(-8, 8)

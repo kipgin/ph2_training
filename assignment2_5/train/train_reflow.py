@@ -30,7 +30,6 @@ def train_reflow():
     for i in range(10000):
         optimizer.zero_grad()
         
-        # Batching from static pairs
         idx = torch.randint(0, num_pairs, (512,))
         batch_x0, batch_x1 = x0[idx], x1[idx]
         
