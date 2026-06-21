@@ -29,10 +29,8 @@ class VelocityNet(nn.Module):
             nn.Linear(hidden_dim, input_dim),
         )
 
-    def forward(self, x, t):
-    
+    def forward(self, x, t): 
         t_emb = self.time_mlp(t)
-        
         x_input = torch.cat([x, t_emb], dim=-1)
         return self.net(x_input)
 
@@ -56,8 +54,6 @@ class ScoreNet(nn.Module):
         )
 
     def forward(self, x, t):
-        # x: [B, 2], t: [B, 1]
         t_emb = self.time_mlp(t)
-        # Concatenate spatial info with time info
         x_input = torch.cat([x, t_emb], dim=-1)
         return self.net(x_input)

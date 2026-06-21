@@ -44,11 +44,11 @@ def train_reflow():
         if i % 1000 == 0:
             print(f"Iter {i} | Loss: {loss.item():.6f}")
 
-    # plot flow matching traject
+    #dung cai ben kia de in
     base_trajs = run_fm_inference(base_model, 50, 100, device)
     plot_trajectories(base_trajs, "Original FM (Curved)", "outputs/curvature_before.png")
     
-    # plot reflow traject
+    #giong
     reflow_trajs = run_fm_inference(reflow_model, 50, 100, device)
     plot_trajectories(reflow_trajs, "Reflow FM (Straight)", "outputs/curvature_after.png")
     
